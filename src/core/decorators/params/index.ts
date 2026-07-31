@@ -1,0 +1,6 @@
+export * from "./param.decorator"
+export * from "./body.decorator"
+export * from "./param-route.decorator"
+export * from "./query.decorator"
+export * from "./req.decorator"
+export * from "./res.decorator"
