@@ -1,15 +1,6 @@
 import { IsString, IsEmail, IsNotEmpty } from "class-validator"
-export interface IUser{
-    name: string
-    email: string
-    password: string
-    role: string
 
-}
-
-export interface ICreateUserDto extends Omit<IUser, "role"> { }
-
-export class CreateUserDto implements ICreateUserDto {
+export class CreateUserDto {
     @IsString()
     @IsNotEmpty()
     name!: string
@@ -23,3 +14,4 @@ export class CreateUserDto implements ICreateUserDto {
     password!: string
     
 }
+

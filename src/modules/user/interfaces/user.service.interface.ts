@@ -1,5 +1,6 @@
-import { ICreateUserDto, IUser } from "../user.dto"
+import { UserDocument } from "../schemas/user.schema"
+import { CreateUserDto } from "../dto/user.dto"
 
 export interface IUserService {
-	create(user: ICreateUserDto): Promise<IUser>
+	create(user: CreateUserDto): Promise<UserDocument>
 }
