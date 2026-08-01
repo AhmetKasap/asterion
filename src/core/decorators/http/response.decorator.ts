@@ -1,29 +1,29 @@
+import { ClassConstructor } from "class-transformer"
+
 import { METADATA_KEYS } from "../../metadata/metadata.keys"
 
 /**
- * Bir entity/domain nesnesini API response şekline çeviren sınıf sözleşmesi.
- * `UserResponseBuilder` gibi static metotlu builder'lar bu şekli sağlar.
- */
-export interface ResponseMapper<TEntity = any, TResponse = any> {
-	fromEntity(entity: TEntity): TResponse
-	fromEntities?(entities: TEntity[]): TResponse[]
-}
-
-/**
  * Controller metodunun döndürdüğü entity/domain veriyi, route çalışırken
- * otomatik olarak verilen mapper üzerinden response DTO'ya çevirir.
+ * verilen response DTO sınıfına göre OTOMATİK dönüştürür (class-transformer).
+ * DTO'da `@Expose()` ile işaretlenmeyen her alan (password, __v, vb.)
+ * otomatik olarak elenir; ekstra bir mapping/builder kodu yazmaya gerek yoktur.
  *
  * @example
  * ```ts
+ * export class UserResponseDto {
+ *   @Expose() id!: string
+ *   @Expose() name!: string
+ * }
+ *
  * @Post("/")
- * @Response(UserResponseBuilder)
+ * @Response(UserResponseDto)
  * async create(@Body() body: CreateUserDto) {
- *   return this.userService.create(body) // UserDocument döner, mapping otomatik yapılır
+ *   return this.userService.create(body) // UserDocument döner, dönüşüm otomatik
  * }
  * ```
  */
-export function Response(mapper: ResponseMapper): MethodDecorator {
+export function Response<T>(dto: ClassConstructor<T>): MethodDecorator {
 	return (target, propertyKey) => {
-		Reflect.defineMetadata(METADATA_KEYS.RESPONSE_MAPPER, mapper, target.constructor, propertyKey)
+		Reflect.defineMetadata(METADATA_KEYS.RESPONSE_MAPPER, dto, target.constructor, propertyKey)
 	}
 }

@@ -6,7 +6,7 @@ import { SERVICE_TYPES } from "@/core/di/service.types"
 
 import { UserService } from "./user.service"
 import { CreateUserDto } from "./dto/user.dto"
-import { UserResponseBuilder } from "./builders/user-response.builder"
+import { UserResponseDto } from "./dto/user.response.dto"
 
 @injectable()
 @Controller("/users")
@@ -17,7 +17,7 @@ export class UserController {
 	) {}
 
 	@Post("/")
-	@Response(UserResponseBuilder)
+	@Response(UserResponseDto)
 	async create(@Body() body: CreateUserDto) {
 		return this.userService.create(body)
 	}

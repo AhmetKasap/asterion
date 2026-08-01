@@ -1,8 +1,8 @@
 import { Express, NextFunction, Request, Response as ExpressResponse } from "express"
 
 import { injectable } from "inversify"
+import { ClassConstructor, plainToInstance } from "class-transformer"
 import { ExploredController } from "./router.types"
-import { ResponseMapper } from "../decorators/http/response.decorator"
 import { ApiResult } from "../http/response/api-result"
 import { ResponseBuilder } from "../http/response/response-builder"
 
@@ -24,7 +24,7 @@ export class RouterRegister {
 				const raw = await controller.instance[route.handler as string]?.(...args)
 
 				if (!res.headersSent) {
-					res.json(this.buildResponse(raw, route.responseMapper))
+					res.json(this.buildResponse(raw, route.responseDto))
 				}
 			} catch (error) {
 				next(error)
@@ -32,24 +32,39 @@ export class RouterRegister {
 		}
 	}
 
-	private buildResponse(raw: unknown, mapper: ResponseMapper | undefined) {
+	private buildResponse(raw: unknown, dto: ClassConstructor<unknown> | undefined) {
 		if (raw instanceof ApiResult) {
-			return ResponseBuilder.success(this.applyMapper(raw.result, mapper), raw.message, raw.pagination)
+			return ResponseBuilder.success(this.applyDto(raw.result, dto), raw.message, raw.pagination)
 		}
 
-		return ResponseBuilder.success(this.applyMapper(raw, mapper))
+		return ResponseBuilder.success(this.applyDto(raw, dto))
 	}
 
-	private applyMapper(data: unknown, mapper: ResponseMapper | undefined) {
-		if (!mapper || data === undefined || data === null) {
+	/**
+	 * Entity/domain veriyi response DTO'ya dönüştürür. `excludeExtraneousValues`
+	 * sayesinde DTO'da `@Expose()` ile işaretlenmeyen her alan (password, __v, vb.)
+	 * otomatik olarak elenir; modül başına elle mapping/builder yazmaya gerek kalmaz.
+	 */
+	private applyDto(data: unknown, dto: ClassConstructor<unknown> | undefined) {
+		if (!dto || data === undefined || data === null) {
 			return data ?? null
 		}
 
-		if (Array.isArray(data)) {
-			return mapper.fromEntities ? mapper.fromEntities(data) : data.map((item) => mapper.fromEntity(item))
+		return plainToInstance(dto, this.toPlain(data), {
+			excludeExtraneousValues: true
+		})
+	}
+
+	private toPlain(value: unknown): unknown {
+		if (Array.isArray(value)) {
+			return value.map((item) => this.toPlain(item))
 		}
 
-		return mapper.fromEntity(data)
+		if (value && typeof value === "object" && typeof (value as { toObject?: unknown }).toObject === "function") {
+			return (value as { toObject: (options?: object) => unknown }).toObject({ virtuals: true })
+		}
+
+		return value
 	}
 
 	private resolveArgs(route: ExploredController["routes"][number], req: Request, res: ExpressResponse) {

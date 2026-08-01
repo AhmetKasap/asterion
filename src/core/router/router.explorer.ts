@@ -1,8 +1,8 @@
 import { Container, injectable } from "inversify"
+import { ClassConstructor } from "class-transformer"
 
 import { METADATA_KEYS } from "../metadata/metadata.keys"
 import { ParamMetadata } from "../decorators/params/param.decorator"
-import { ResponseMapper } from "../decorators/http/response.decorator"
 import { ExploredController, RouteDefinition } from "./router.types"
 
 @injectable()
@@ -25,7 +25,7 @@ export class RouterExplorer {
 			const params: ParamMetadata[] =
 				Reflect.getMetadata(METADATA_KEYS.PARAMS, controller, route.handler) || []
 
-			const responseMapper: ResponseMapper | undefined =
+			const responseDto: ClassConstructor<unknown> | undefined =
 				Reflect.getMetadata(METADATA_KEYS.RESPONSE_MAPPER, controller, route.handler)
 
 			return {
@@ -33,7 +33,7 @@ export class RouterExplorer {
 
 				params,
 
-				...(responseMapper !== undefined ? { responseMapper } : {})
+				...(responseDto !== undefined ? { responseDto } : {})
 			}
 		})
 
