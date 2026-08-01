@@ -1,5 +1,5 @@
 {
-  "name": "new-diet-app",
+  "name": "asterion",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -9,15 +9,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AhmetKasap/new-diet-app.git"
+    "url": "git+https://github.com/AhmetKasap/asterion.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/AhmetKasap/new-diet-app/issues"
+    "url": "https://github.com/AhmetKasap/asterion/issues"
   },
-  "homepage": "https://github.com/AhmetKasap/new-diet-app#readme",
+  "homepage": "https://github.com/AhmetKasap/asterion#readme",
   "description": "",
   "dependencies": {
     "class-transformer": "^0.5.1",

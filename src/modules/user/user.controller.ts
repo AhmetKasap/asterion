@@ -9,7 +9,7 @@ import { CreateUserDto } from "./dto/user.dto"
 import { UserResponseDto } from "./dto/user.response.dto"
 
 @injectable()
-@Controller("/users")
+@Controller("/api/v1/users")
 export class UserController {
 	constructor(
 		@inject(SERVICE_TYPES.UserService)
