@@ -1,7 +1,10 @@
-import { Express, NextFunction, Request, Response } from "express"
+import { Express, NextFunction, Request, Response as ExpressResponse } from "express"
 
 import { injectable } from "inversify"
 import { ExploredController } from "./router.types"
+import { ResponseMapper } from "../decorators/http/response.decorator"
+import { ApiResult } from "../http/response/api-result"
+import { ResponseBuilder } from "../http/response/response-builder"
 
 @injectable()
 export class RouterRegister {
@@ -14,14 +17,14 @@ export class RouterRegister {
 	}
 
 	private createHandler(controller: ExploredController, route: ExploredController["routes"][number]) {
-		return async (req: Request, res: Response, next: NextFunction) => {
+		return async (req: Request, res: ExpressResponse, next: NextFunction) => {
 			try {
 				const args = this.resolveArgs(route, req, res)
 
-				const result = await controller.instance[route.handler as string]?.(...args)
+				const raw = await controller.instance[route.handler as string]?.(...args)
 
 				if (!res.headersSent) {
-					res.json((result as unknown as object) ?? {})
+					res.json(this.buildResponse(raw, route.responseMapper))
 				}
 			} catch (error) {
 				next(error)
@@ -29,7 +32,27 @@ export class RouterRegister {
 		}
 	}
 
-	private resolveArgs(route: ExploredController["routes"][number], req: Request, res: Response) {
+	private buildResponse(raw: unknown, mapper: ResponseMapper | undefined) {
+		if (raw instanceof ApiResult) {
+			return ResponseBuilder.success(this.applyMapper(raw.result, mapper), raw.message, raw.pagination)
+		}
+
+		return ResponseBuilder.success(this.applyMapper(raw, mapper))
+	}
+
+	private applyMapper(data: unknown, mapper: ResponseMapper | undefined) {
+		if (!mapper || data === undefined || data === null) {
+			return data ?? null
+		}
+
+		if (Array.isArray(data)) {
+			return mapper.fromEntities ? mapper.fromEntities(data) : data.map((item) => mapper.fromEntity(item))
+		}
+
+		return mapper.fromEntity(data)
+	}
+
+	private resolveArgs(route: ExploredController["routes"][number], req: Request, res: ExpressResponse) {
 		const args: unknown[] = []
 
 		route.params
