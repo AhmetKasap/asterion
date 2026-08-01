@@ -14,4 +14,5 @@ export interface ApiResponse<T = unknown> {
 	message: string
 	result: T | null
 	pagination?: PaginationMeta
+	errors?: Record<string, string[]>
 }

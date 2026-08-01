@@ -18,7 +18,7 @@ export class UserController {
 
 	@Post("/")
 	@Response(UserResponseDto)
-	async create(@Body() body: CreateUserDto) {
+	async create(@Body(CreateUserDto) body: CreateUserDto) {
 		return this.userService.create(body)
 	}
 }

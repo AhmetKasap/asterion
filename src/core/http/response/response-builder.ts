@@ -6,7 +6,7 @@ import { ApiResponse, PaginationMeta } from "./api-response"
  * response'u, errorHandler ise her hatayı bunun üzerinden üretir.
  */
 export class ResponseBuilder {
-	static success<T>(result: T, message = "İşlem başarılı", pagination?: PaginationMeta): ApiResponse<T> {
+	static success<T>(result: T, message = "Operation successful", pagination?: PaginationMeta): ApiResponse<T> {
 		return {
 			success: true,
 			message,
@@ -15,15 +15,16 @@ export class ResponseBuilder {
 		}
 	}
 
-	static paginated<T>(result: T[], pagination: PaginationMeta, message = "İşlem başarılı"): ApiResponse<T[]> {
+	static paginated<T>(result: T[], pagination: PaginationMeta, message = "Operation successful"): ApiResponse<T[]> {
 		return ResponseBuilder.success(result, message, pagination)
 	}
 
-	static error(message: string): ApiResponse<null> {
+	static error(message: string, errors?: Record<string, string[]>): ApiResponse<null> {
 		return {
 			success: false,
 			message,
-			result: null
+			result: null,
+			...(errors !== undefined ? { errors } : {})
 		}
 	}
 }

@@ -2,9 +2,11 @@ import { Express, NextFunction, Request, Response as ExpressResponse } from "exp
 
 import { injectable } from "inversify"
 import { ClassConstructor, plainToInstance } from "class-transformer"
+import { validate, ValidationError } from "class-validator"
 import { ExploredController } from "./router.types"
 import { ApiResult } from "../http/response/api-result"
 import { ResponseBuilder } from "../http/response/response-builder"
+import { UnprocessableEntityException } from "../exceptions/http.exception"
 
 @injectable()
 export class RouterRegister {
@@ -19,7 +21,7 @@ export class RouterRegister {
 	private createHandler(controller: ExploredController, route: ExploredController["routes"][number]) {
 		return async (req: Request, res: ExpressResponse, next: NextFunction) => {
 			try {
-				const args = this.resolveArgs(route, req, res)
+				const args = await this.resolveArgs(route, req, res)
 
 				const raw = await controller.instance[route.handler as string]?.(...args)
 
@@ -67,31 +69,63 @@ export class RouterRegister {
 		return value
 	}
 
-	private resolveArgs(route: ExploredController["routes"][number], req: Request, res: ExpressResponse) {
+	private async resolveArgs(route: ExploredController["routes"][number], req: Request, res: ExpressResponse) {
 		const args: unknown[] = []
 
-		route.params
-			.sort((a, b) => a.index - b.index)
-			.forEach((param) => {
-				switch (param.source) {
-					case "body":
-						args[param.index] = req.body
-						break
-					case "param":
-						args[param.index] = param.key ? req.params[param.key] : req.params
-						break
-					case "query":
-						args[param.index] = param.key ? req.query[param.key] : req.query
-						break
-					case "req":
-						args[param.index] = req
-						break
-					case "res":
-						args[param.index] = res
-						break
-				}
-			})
+		const sortedParams = [...route.params].sort((a, b) => a.index - b.index)
+
+		for (const param of sortedParams) {
+			switch (param.source) {
+				case "body":
+					args[param.index] = param.dtoClass
+						? await this.validateBody(param.dtoClass, req.body)
+						: req.body
+					break
+				case "param":
+					args[param.index] = param.key ? req.params[param.key] : req.params
+					break
+				case "query":
+					args[param.index] = param.key ? req.query[param.key] : req.query
+					break
+				case "req":
+					args[param.index] = req
+					break
+				case "res":
+					args[param.index] = res
+					break
+			}
+		}
 
 		return args
+	}
+
+	/**
+	 * Body'yi DTO'ya çevirip class-validator ile doğrular. Kural ihlali varsa
+	 * UnprocessableEntityException fırlatır; bu, errorHandler tarafından
+	 * otomatik olarak 422 + alan bazlı hata listesine çevrilir.
+	 */
+	private async validateBody(dtoClass: ClassConstructor<unknown>, body: unknown) {
+		const instance = plainToInstance(dtoClass, body ?? {})
+
+		const errors = await validate(instance as object, {
+			whitelist: true,
+			forbidNonWhitelisted: false
+		})
+
+		if (errors.length > 0) {
+			throw new UnprocessableEntityException("Validation failed", this.formatValidationErrors(errors))
+		}
+
+		return instance
+	}
+
+	private formatValidationErrors(errors: ValidationError[]): Record<string, string[]> {
+		const result: Record<string, string[]> = {}
+
+		for (const error of errors) {
+			result[error.property] = Object.values(error.constraints ?? {})
+		}
+
+		return result
 	}
 }

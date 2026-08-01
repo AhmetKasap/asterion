@@ -1,3 +1,5 @@
+import { ClassConstructor } from "class-transformer"
+
 import { METADATA_KEYS } from "../../metadata/metadata.keys"
 
 export type ParamSource = "body" | "param" | "query" | "req" | "res"
@@ -6,9 +8,14 @@ export interface ParamMetadata {
 	index: number
 	source: ParamSource
 	key?: string
+	dtoClass?: ClassConstructor<unknown>
 }
 
-export function createParamDecorator(source: ParamSource, key?: string): ParameterDecorator {
+export function createParamDecorator(
+	source: ParamSource,
+	key?: string,
+	dtoClass?: ClassConstructor<unknown>
+): ParameterDecorator {
 	return (target, propertyKey, index) => {
 		if (propertyKey === undefined) {
 			return
@@ -22,7 +29,9 @@ export function createParamDecorator(source: ParamSource, key?: string): Paramet
 
 			source,
 
-			...(key !== undefined ? { key } : {})
+			...(key !== undefined ? { key } : {}),
+
+			...(dtoClass !== undefined ? { dtoClass } : {})
 		})
 
 		Reflect.defineMetadata(METADATA_KEYS.PARAMS, existing, target.constructor, propertyKey)
